@@ -5,18 +5,17 @@
     <canvas id="can" width="1024" height="1024">
     <script>
         const context = can.getContext('2d');
-        let fillStyle = 'rgb(0,211,149)';
         let bgStyle = 'rgb(255,77,64)';
+        let fillStyles = ['rgb(0,211,149)', 'rgb(0,175,141)', 'rgb(0,110,113)', 'rgb(45,107,104)', 'rgb(71,115,117)'];
         function go(t) {
             context.fillStyle = bgStyle;
             context.fillRect(0,0,1024,1024);
-            context.fillStyle = fillStyle;
             let m = 1 + ((Math.trunc(t/150)) % 63);
-            console.log(m);
+            context.fillStyle=fillStyles[m % fillStyles.length];
+
             for (let x = 0; x < 256; x++) {
                 for (let y = 0; y < 256; y++) {
-
-                    if ((x ^ y) & m) {
+                    if ((x & y) % m) {
                         context.fillRect(x*16, y*16, 16, 16);
                     }
                 }
