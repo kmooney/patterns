@@ -9,10 +9,10 @@
         let bgStyle = 'rgba(255,77,64,0.9)';
         let fillStyles = ['rgba(0,211,149,1.0)', 'rgba(0,175,141,0.7)', 'rgba(0,110,113,1.0)', 'rgba(45,107,104,1.0)', 'rgba(71,115,117,1.0)'];
         var lastM = 0;
-        var xScale = 0.0125;
-        var yScale = 0.01125;
-        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
+        var xScale = 0.1;
+        var yScale = 0;
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 20000});
+   
         var analyser = audioCtx.createAnalyser();
         var distortion = audioCtx.createWaveShaper();
         var gainNode = audioCtx.createGain();
@@ -25,7 +25,7 @@
         // Manipulate the Biquad filter
 
         function go(t) {
-            var audioBuffer = audioCtx.createBuffer(2, 256, 48000);
+            var audioBuffer = audioCtx.createBuffer(2, 256, audioCtx.sampleRate);
             var bufferLeft = audioBuffer.getChannelData(0);
             var bufferRight = audioBuffer.getChannelData(1);
             context.fillStyle = bgStyle;
@@ -36,7 +36,7 @@
 
             for (let x = t * xScale; x < 256 + (t * xScale); x++) {
                 for (let y = t * yScale; y < 256 + (t * yScale); y++) {
-                    if ( (x^y)*(x^y) % m) {
+                    if ( ((x/5) ^ (y/5)) % m) {
                         context.fillRect(x*SIZE - (t*xScale*SIZE), y*SIZE - (t*yScale*SIZE), SIZE, SIZE);
                         if (Math.trunc(x*SIZE - (t*xScale*SIZE)) == 0) {
                             bufferLeft[Math.trunc(y*SIZE - (t*yScale*SIZE))] = 1.0;
@@ -58,7 +58,8 @@
             convolver.buffer = source.buffer;
             convolver.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
+            //biquadFilter.frequency.value = 440;
+            //biquadFilter.type = "lowpass";
             source.start();
             window.requestAnimationFrame(go);
         }
