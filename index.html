@@ -4,25 +4,69 @@
 <body>
     <canvas id="can" width="1024" height="1024">
     <script>
+        const SIZE = 4;
         const context = can.getContext('2d');
-        let bgStyle = 'rgb(255,77,64)';
-        let fillStyles = ['rgb(0,211,149)', 'rgb(0,175,141)', 'rgb(0,110,113)', 'rgb(45,107,104)', 'rgb(71,115,117)'];
+        let bgStyle = 'rgba(255,77,64,1.0)';
+        let fillStyles = ['rgba(0,211,149,1.0)', 'rgba(0,175,141,0.7)', 'rgba(0,110,113,1.0)', 'rgba(45,107,104,1.0)', 'rgba(71,115,117,1.0)'];
+        var lastM = 0;
+        var xScale = 0.01;
+        var yScale = 0;
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+var analyser = audioCtx.createAnalyser();
+var distortion = audioCtx.createWaveShaper();
+var gainNode = audioCtx.createGain();
+var biquadFilter = audioCtx.createBiquadFilter();
+var convolver = audioCtx.createConvolver();
+
+
+// connect the nodes together
+
+// Manipulate the Biquad filter
+
         function go(t) {
+            var audioBuffer = audioCtx.createBuffer(2, 1024, 48000);
+            var bufferLeft = audioBuffer.getChannelData(0);
+            var bufferRight = audioBuffer.getChannelData(1);
             context.fillStyle = bgStyle;
             context.fillRect(0,0,1024,1024);
-            let m = 1 + ((Math.trunc(t/150)) % 63);
+
+            let m = 13;
             context.fillStyle=fillStyles[m % fillStyles.length];
 
-            for (let x = 0; x < 256; x++) {
-                for (let y = 0; y < 256; y++) {
-                    if ((x & y) % m) {
-                        context.fillRect(x*16, y*16, 16, 16);
+            for (let x = t * xScale; x < 256 + (t * xScale); x++) {
+                for (let y = t * yScale; y < 256 + (t * yScale); y++) {
+                    if ( (x^y) * (x | y)  % m) {
+                        context.fillRect(x*SIZE - (t*xScale*SIZE), y*SIZE - (t*yScale*SIZE), SIZE, SIZE);
+                        if (Math.trunc(x*SIZE - (t*xScale*SIZE)) == 0) {
+                            bufferLeft[Math.trunc(y*SIZE - (t*yScale*SIZE))] = 0.90;
+                            bufferRight[Math.trunc(y*SIZE - (t*yScale*SIZE))] = 0.9;
+                        }
+                    } else if (Math.trunc(x*SIZE - (t*xScale*SIZE)) == 0) {
+                        bufferLeft[Math.trunc(y*SIZE - (t*yScale*SIZE))] = -0.9;
+                        bufferRight[Math.trunc(y*SIZE - (t*yScale*SIZE))] = -0.9;
                     }
                 }
             }
+            var source  = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
 
+            source.connect(analyser);
+            analyser.connect(distortion);
+            distortion.connect(biquadFilter);
+            biquadFilter.connect(convolver);
+            convolver.buffer = audioBuffer;
+            convolver.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            biquadFilter.type = "lowpass";
+            biquadFilter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+
+            source.start();
             window.requestAnimationFrame(go);
         }
+
+
+
         window.requestAnimationFrame(go);
     </script>
 
