@@ -2,15 +2,18 @@
 <html>
 <head><title>Patterns</title></head>
 <body>
-    <canvas id="can" width="1024" height="1024">
+    <div><canvas id="can" width="1024" height="1024"></div>
+    <div><a href="#" onClick="next()">next</a></div>
     <script>
         const SIZE = 4;
         const context = can.getContext('2d');
         let bgStyle = 'rgba(255,77,64,0.9)';
         let fillStyles = ['rgba(0,211,149,1.0)', 'rgba(0,175,141,0.7)', 'rgba(0,110,113,1.0)', 'rgba(45,107,104,1.0)', 'rgba(71,115,117,1.0)'];
         var lastM = 0;
-        var xScale = 0.1;
-        var yScale = 0;
+        var xScale = (-0.5 + Math.random()) / 10;
+        var yScale = (-0.5 + Math.random()) / 10;
+        var xDiv = (-0.5 + Math.random()) * 5;
+        var yDiv = (-0.5 + Math.random()) * 5;
         var audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 20000});
    
         var analyser = audioCtx.createAnalyser();
@@ -19,30 +22,28 @@
         var biquadFilter = audioCtx.createBiquadFilter();
         var convolver = audioCtx.createConvolver();
 
-
-        // connect the nodes together
-
-        // Manipulate the Biquad filter
+        var p = new URLSearchParams(window.location.search);
 
         function go(t) {
-            var audioBuffer = audioCtx.createBuffer(2, 256, audioCtx.sampleRate);
+
+            var audioBuffer = audioCtx.createBuffer(2, 334, audioCtx.sampleRate);
             var bufferLeft = audioBuffer.getChannelData(0);
             var bufferRight = audioBuffer.getChannelData(1);
             context.fillStyle = bgStyle;
             context.fillRect(0,0,1024,1024);
 
-            let m = 13;
+            let m = p.get('m') || 13;
             context.fillStyle=fillStyles[m % fillStyles.length];
 
             for (let x = t * xScale; x < 256 + (t * xScale); x++) {
                 for (let y = t * yScale; y < 256 + (t * yScale); y++) {
-                    if ( ((x/5) ^ (y/5)) % m) {
+                    if ( ((x/xDiv) | (y/yDiv)) % m) {
                         context.fillRect(x*SIZE - (t*xScale*SIZE), y*SIZE - (t*yScale*SIZE), SIZE, SIZE);
-                        if (Math.trunc(x*SIZE - (t*xScale*SIZE)) == 0) {
+                        if (Math.trunc(x*SIZE - (t*xScale*SIZE)) < 3) {
                             bufferLeft[Math.trunc(y*SIZE - (t*yScale*SIZE))] = 1.0;
                             bufferRight[Math.trunc(y*SIZE - (t*yScale*SIZE))] =1.0;
                         }
-                    } else if (Math.trunc(x*SIZE - (t*xScale*SIZE)) == 0) {
+                    } else if (Math.trunc(x*SIZE - (t*xScale*SIZE)) < 3) {
                         bufferLeft[Math.trunc(y*SIZE - (t*yScale*SIZE))] = -1.0;
                         bufferRight[Math.trunc(y*SIZE - (t*yScale*SIZE))] = -1.0;
                     }
@@ -67,7 +68,10 @@
 
 
         window.requestAnimationFrame(go);
+        function next() {
+            p.set('m', parseInt(p.get('m')) + 1);
+            window.location.search = p.toString();
+        }
     </script>
-
 </body>
 </html>
